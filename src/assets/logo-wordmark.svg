@@ -1,0 +1,19 @@
+<svg width="640" height="160" viewBox="0 0 640 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .wordmark {
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      fill: white;
+    }
+  </style>
+
+  <!-- JOB -->
+  <text x="0" y="55" font-size="52" class="wordmark">JOB</text>
+
+  <!-- CAREER -->
+  <text x="0" y="110" font-size="52" class="wordmark">CAREER</text>
+
+  <!-- NEPAL -->
+  <text x="0" y="165" font-size="52" class="wordmark">NEPAL</text>
+</svg>
