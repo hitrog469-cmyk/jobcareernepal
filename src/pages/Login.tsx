@@ -1,161 +1,143 @@
-// src/pages/Login.tsx
-import { FormEvent, useState } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import GoogleLogo from "../assets/Google.png";
-import AppleLogo from "../assets/Apple.png";
-import {
-  auth,
-  googleProvider,
-  appleProvider,
-} from "../firebase";
-import {
-  signInWithPopup,
-  signInWithEmailAndPassword,
-} from "firebase/auth";
+import { signInWithPopup, signInWithEmailAndPassword } from "firebase/auth";
+import { auth, googleProvider, appleProvider } from "../firebase"; // ✅ lowercase
 
 export default function Login() {
-  const navigate = useNavigate();
+  const nav = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // GOOGLE LOGIN
-  const handleGoogleLogin = async () => {
+  async function onEmailLogin(e: FormEvent) {
+    e.preventDefault();
+    setErr(null);
+    setLoading(true);
     try {
-      setError(null);
-      setLoading(true);
-      await signInWithPopup(auth, googleProvider);
-      navigate("/dashboard"); // redirect after success
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Google login failed.");
+      await signInWithEmailAndPassword(auth, email, password);
+      nav("/dashboard");
+    } catch (error: any) {
+      setErr(error?.message ?? "Login failed");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  // APPLE LOGIN (will only work once Apple is fully configured)
-  const handleAppleLogin = async () => {
+  async function onGoogle() {
+    setErr(null);
+    setLoading(true);
     try {
-      setError(null);
-      setLoading(true);
+      await signInWithPopup(auth, googleProvider);
+      nav("/dashboard");
+    } catch (error: any) {
+      setErr(error?.message ?? "Google login failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onApple() {
+    setErr(null);
+    setLoading(true);
+    try {
       await signInWithPopup(auth, appleProvider);
-      navigate("/dashboard");
-    } catch (err: any) {
-      console.error(err);
-      setError(
-        "Apple login is not fully configured yet. Please use Google or email."
+      nav("/dashboard");
+    } catch (error: any) {
+      setErr(
+        error?.message ??
+          "Apple login failed (Apple provider needs extra setup in Firebase/Apple Developer)."
       );
     } finally {
       setLoading(false);
     }
-  };
-
-  // EMAIL/PASSWORD LOGIN
-  const handleEmailLogin = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!email || !password) {
-      setError("Please enter email and password.");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate("/dashboard");
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Email login failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }
 
   return (
-    <div className="flex justify-center pt-20 pb-32">
-      <div className="bg-slate-900/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl p-10 w-full max-w-md shadow-2xl">
-        <h1 className="text-3xl font-bold text-center mb-3 text-white">
+    <div className="min-h-[70vh] flex items-center justify-center px-4">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+        <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">
           Login
         </h1>
-
-        <p className="text-center text-slate-300 mb-8">
-          Welcome back to{" "}
-          <span className="text-emerald-400">JobCareerNepal</span>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          Welcome back to <span className="text-emerald-500">JobCareerNepal</span>
         </p>
 
-        {/* ERROR MESSAGE */}
-        {error && (
-          <div className="mb-4 text-sm text-red-400 bg-red-900/40 border border-red-500/60 rounded-lg px-3 py-2">
-            {error}
+        {err && (
+          <div className="mt-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
+            {err}
           </div>
         )}
 
-        {/* GOOGLE LOGIN */}
-        <button
-          onClick={handleGoogleLogin}
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-3 bg-white text-slate-900 py-3 rounded-full font-medium shadow hover:opacity-90 transition disabled:opacity-60"
-        >
-          <img src={GoogleLogo} alt="Google" className="h-5 w-5" />
-          Continue with Google
-        </button>
+        <div className="mt-5 space-y-3">
+          <button
+            type="button"
+            onClick={onGoogle}
+            disabled={loading}
+            className="w-full rounded-full border border-slate-200 bg-white py-3 font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+          >
+            Continue with Google
+          </button>
 
-        {/* APPLE LOGIN */}
-        <button
-          onClick={handleAppleLogin}
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-3 bg-white text-slate-900 py-3 rounded-full font-medium shadow hover:opacity-90 transition mt-4 disabled:opacity-60"
-        >
-          <img src={AppleLogo} alt="Apple" className="h-5 w-5" />
-          Continue with Apple
-        </button>
-
-        {/* DIVIDER */}
-        <div className="text-center text-slate-400 text-xs my-6">
-          OR LOGIN WITH EMAIL
+          <button
+            type="button"
+            onClick={onApple}
+            disabled={loading}
+            className="w-full rounded-full border border-slate-200 bg-white py-3 font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+          >
+            Continue with Apple
+          </button>
         </div>
 
-        {/* EMAIL FORM */}
-        <form onSubmit={handleEmailLogin} className="space-y-4 mt-6">
+        <div className="my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+          <span className="text-xs text-slate-500 dark:text-slate-500">
+            OR LOGIN WITH EMAIL
+          </span>
+          <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+        </div>
+
+        <form onSubmit={onEmailLogin} className="space-y-4">
           <div>
-            <label className="text-slate-300">Email</label>
+            <label className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+              Email
+            </label>
             <input
-              type="email"
+              className="mt-2 w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
               placeholder="you@example.com"
-              className="input mt-1 w-full"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              type="email"
               required
             />
           </div>
 
           <div>
-            <label className="text-slate-300">Password</label>
+            <label className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+              Password
+            </label>
             <input
-              type="password"
-              placeholder="••••••"
-              className="input mt-1 w-full"
+              className="mt-2 w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              type="password"
               required
             />
           </div>
 
           <button
-            type="submit"
+            className="w-full rounded-full bg-emerald-500 py-3 font-bold text-white hover:bg-emerald-600 disabled:opacity-60"
             disabled={loading}
-            className="btn btn-primary w-full py-3 mt-3 rounded-full disabled:opacity-60"
+            type="submit"
           >
-            {loading ? "Logging in..." : "Login"}
+            Login
           </button>
         </form>
 
-        <p className="text-center text-slate-400 mt-6 text-sm">
-          Don’t have an account?{" "}
-          <Link className="text-emerald-400" to="/signup">
+        <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
+          Don&apos;t have an account?{" "}
+          <Link className="font-semibold text-emerald-500 hover:underline" to="/signup">
             Create one
           </Link>
         </p>

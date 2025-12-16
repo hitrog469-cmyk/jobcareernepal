@@ -30,3 +30,4 @@ export const googleProvider = new GoogleAuthProvider();
 // Apple provider – this REQUIRES extra setup in Apple Developer + Firebase
 // UI will work but sign-in will fail until Apple is fully configured.
 export const appleProvider = new OAuthProvider("apple.com");
+export { app };
