@@ -1,115 +1,154 @@
-import { useState } from "react";
-import type { FormEvent } from "react";
+// src/pages/Login.tsx
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { signInWithPopup, signInWithEmailAndPassword } from "firebase/auth";
-import { auth, googleProvider, appleProvider } from "../firebase"; // ✅ lowercase
+import type { FormEvent } from "react";
+import {
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  sendPasswordResetEmail,
+} from "firebase/auth";
+import { auth, googleProvider, appleProvider } from "../firebase";
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Login() {
-  const nav = useNavigate();
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [err, setErr] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  async function onEmailLogin(e: FormEvent) {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const emailOk = useMemo(() => emailRegex.test(email.trim()), [email]);
+
+  async function handleEmailLogin(e: FormEvent) {
     e.preventDefault();
     setErr(null);
-    setLoading(true);
+    setMsg(null);
+
+    if (!emailOk) return setErr("Please enter a valid email address.");
+    if (!password) return setErr("Please enter your password.");
+
+    setBusy(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      nav("/dashboard");
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+      navigate("/");
     } catch (error: any) {
-      setErr(error?.message ?? "Login failed");
+      setErr(error?.message || "Login failed.");
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   }
 
-  async function onGoogle() {
+  async function handleGoogle() {
     setErr(null);
-    setLoading(true);
+    setMsg(null);
+    setBusy(true);
     try {
       await signInWithPopup(auth, googleProvider);
-      nav("/dashboard");
+      navigate("/");
     } catch (error: any) {
-      setErr(error?.message ?? "Google login failed");
+      setErr(error?.message || "Google login failed.");
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   }
 
-  async function onApple() {
+  async function handleApple() {
     setErr(null);
-    setLoading(true);
+    setMsg(null);
+    setBusy(true);
     try {
       await signInWithPopup(auth, appleProvider);
-      nav("/dashboard");
+      navigate("/");
     } catch (error: any) {
       setErr(
-        error?.message ??
-          "Apple login failed (Apple provider needs extra setup in Firebase/Apple Developer)."
+        error?.message ||
+          "Apple login failed. (Apple requires extra setup in Firebase + Apple Developer.)"
       );
     } finally {
-      setLoading(false);
+      setBusy(false);
+    }
+  }
+
+  async function handleForgotPassword() {
+    setErr(null);
+    setMsg(null);
+
+    if (!emailOk) return setErr("Enter your email first, then click Forgot Password.");
+    setBusy(true);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setMsg("Password reset email sent. Please check your inbox/spam.");
+    } catch (error: any) {
+      setErr(error?.message || "Could not send reset email.");
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">
+    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center px-4 py-10 bg-slate-50 dark:bg-slate-950">
+      <div className="w-full max-w-md rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-xl p-6 sm:p-8">
+        <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white text-center">
           Login
         </h1>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Welcome back to <span className="text-emerald-500">JobCareerNepal</span>
+        <p className="text-center mt-2 text-slate-600 dark:text-slate-300">
+          Welcome back to <span className="text-emerald-600 dark:text-emerald-400 font-semibold">JobCareerNepal</span>
         </p>
 
-        {err && (
-          <div className="mt-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
-            {err}
+        {(err || msg) && (
+          <div
+            className={`mt-5 rounded-xl border px-4 py-3 text-sm ${
+              err
+                ? "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-200"
+                : "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200"
+            }`}
+          >
+            {err || msg}
           </div>
         )}
 
-        <div className="mt-5 space-y-3">
+        {/* Social */}
+        <div className="mt-6 grid gap-3">
           <button
-            type="button"
-            onClick={onGoogle}
-            disabled={loading}
-            className="w-full rounded-full border border-slate-200 bg-white py-3 font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+            disabled={busy}
+            onClick={handleGoogle}
+            className="w-full rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 px-4 py-3 font-semibold text-slate-900 dark:text-white flex items-center justify-center gap-3"
           >
+            <img src="/Google.png" alt="Google" className="w-5 h-5" />
             Continue with Google
           </button>
 
           <button
-            type="button"
-            onClick={onApple}
-            disabled={loading}
-            className="w-full rounded-full border border-slate-200 bg-white py-3 font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+            disabled={busy}
+            onClick={handleApple}
+            className="w-full rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 px-4 py-3 font-semibold text-slate-900 dark:text-white flex items-center justify-center gap-3"
           >
+            <img src="/Apple.png" alt="Apple" className="w-5 h-5" />
             Continue with Apple
           </button>
         </div>
 
-        <div className="my-6 flex items-center gap-3">
+        <div className="mt-6 flex items-center gap-3">
           <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
-          <span className="text-xs text-slate-500 dark:text-slate-500">
-            OR LOGIN WITH EMAIL
-          </span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">OR LOGIN WITH EMAIL</span>
           <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
         </div>
 
-        <form onSubmit={onEmailLogin} className="space-y-4">
+        {/* Email login */}
+        <form onSubmit={handleEmailLogin} className="mt-6 grid gap-4">
           <div>
             <label className="text-sm font-semibold text-slate-800 dark:text-slate-200">
               Email
             </label>
             <input
-              className="mt-2 w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
-              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              type="email"
-              required
+              placeholder="you@example.com"
+              className="mt-2 w-full rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
             />
           </div>
 
@@ -118,29 +157,34 @@ export default function Login() {
               Password
             </label>
             <input
-              className="mt-2 w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               type="password"
-              required
+              placeholder="••••••••"
+              className="mt-2 w-full rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
             />
           </div>
 
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-sm text-emerald-700 dark:text-emerald-400 hover:underline"
+            >
+              Forgot password?
+            </button>
+            <Link to="/signup" className="text-sm text-slate-600 dark:text-slate-300 hover:underline">
+              Create account
+            </Link>
+          </div>
+
           <button
-            className="w-full rounded-full bg-emerald-500 py-3 font-bold text-white hover:bg-emerald-600 disabled:opacity-60"
-            disabled={loading}
-            type="submit"
+            disabled={busy}
+            className="mt-2 w-full rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-3 disabled:opacity-60"
           >
-            Login
+            {busy ? "Please wait..." : "Login"}
           </button>
         </form>
-
-        <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
-          Don&apos;t have an account?{" "}
-          <Link className="font-semibold text-emerald-500 hover:underline" to="/signup">
-            Create one
-          </Link>
-        </p>
       </div>
     </div>
   );
